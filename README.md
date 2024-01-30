@@ -62,3 +62,9 @@ Pagination! I asked for some assistance -- I was not sure what the significance 
 - However, that didn't get me to 20 results.
 
 Once I got a response that the 20 represented the default page size, it was much simpler to solve.
+
+### Front-end changes
+- Added handler for clicking "Load More" button. 
+- Persisting the # of pages loaded so far so we can paginate the responses.
+- Using the correct ID for the load more button
+- Disabling "Load More" if the results are below the page size (so its clear there are no more pages to grab)

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 )
 
 func main() {
@@ -43,13 +44,25 @@ type Searcher struct {
 
 func handleSearch(searcher Searcher) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page := 0
+		queryPage, ok := r.URL.Query()["page"]
+		if ok && len(queryPage[0]) == 1 {
+			pageInt, err := strconv.Atoi(queryPage[0])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("page is not a valid number"))
+				return
+			}
+			page = pageInt
+		}
+
 		query, ok := r.URL.Query()["q"]
 		if !ok || len(query[0]) < 1 {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("missing search query in URL params"))
 			return
 		}
-		results := searcher.Search(query[0])
+		results := searcher.Search(query[0], page)
 		buf := &bytes.Buffer{}
 		enc := json.NewEncoder(buf)
 		err := enc.Encode(results)
@@ -73,13 +86,19 @@ func (s *Searcher) Load(filename string) error {
 	return nil
 }
 
-func (s *Searcher) Search(query string) []string {
+func (s *Searcher) Search(query string, page int) []string {
 	// (?i) makes the regex case insensitive
 	reg := regexp.MustCompile(fmt.Sprintf(`(?i)(%s)`, query))
 	// idxs are in sorted order
-	idxs := s.SuffixArray.FindAllIndex(reg, 20)
+	count := page*20 + 20
+	idxs := s.SuffixArray.FindAllIndex(reg, count)
 	results := []string{}
-	for _, idx := range idxs {
+
+	if len(idxs) < page*20 {
+		return []string{}
+	}
+
+	for _, idx := range idxs[page*20:] {
 		// Making sure we check the bounds just in case
 		start := max(0, idx[0]-250)
 		end := min(idx[1]+250, len(s.CompleteWorks))
