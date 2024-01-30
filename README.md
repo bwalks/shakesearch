@@ -45,3 +45,20 @@ make test
 ```
 
 Good luck!
+
+## Test Case Fixes
+
+### TestSearchCaseSensitive
+
+I updated the suffix array to include the lower case content, and lower cased the query when supplied to ensure the lookup is case insensitive.
+
+### TestSearchDrunk
+
+Pagination! I asked for some assistance -- I was not sure what the significance of the 20 results was. My initial thought was:
+- There are over 100 responses for "drunk". Maybe we wanted to filter the exact term "drunk" instead of including terms like "drunkard"?
+- If so, I tried to update the regex to ignore those other terms, but couldn't get to 20.
+- I thought that maybe we didn't want to show duplicates since some of the terms would show up multiple times in the response:
+    - We return a 250 character window around the search term, so its possible multiple "drunk" terms appear in other windows.
+- However, that didn't get me to 20 results.
+
+Once I got a response that the 20 represented the default page size, it was much simpler to solve.

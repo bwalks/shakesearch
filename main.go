@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 )
 
 func main() {
@@ -73,10 +74,33 @@ func (s *Searcher) Load(filename string) error {
 }
 
 func (s *Searcher) Search(query string) []string {
-	idxs := s.SuffixArray.Lookup([]byte(query), -1)
+	// (?i) makes the regex case insensitive
+	reg := regexp.MustCompile(fmt.Sprintf(`(?i)(%s)`, query))
+	// idxs are in sorted order
+	idxs := s.SuffixArray.FindAllIndex(reg, 20)
 	results := []string{}
 	for _, idx := range idxs {
-		results = append(results, s.CompleteWorks[idx-250:idx+250])
+		// Making sure we check the bounds just in case
+		start := max(0, idx[0]-250)
+		end := min(idx[1]+250, len(s.CompleteWorks))
+		results = append(results, s.CompleteWorks[start:end])
 	}
 	return results
+}
+
+// go 1.15 does not have max(x, y) or min(x, y). There is Math.max and Math.min, but that takes in a float
+// Defining this here since it is simpler
+
+func max(a int, b int) int {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
